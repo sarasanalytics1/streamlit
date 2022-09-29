@@ -2,7 +2,7 @@ import streamlit as st
 import json
 import pandas as pd
 import os
-st.title("Hi welcome to saras")
+st.title("Hi, welcome to Saras")
 data_file = st.file_uploader("Choose a file",type='json')
 
 
@@ -21,11 +21,7 @@ def flatten_json(nested_json, exclude=['']):
         if type(x) is dict:
             for a in x:
                 if a not in exclude: flatten(x[a], name + a + '_')
-        elif type(x) is list:
-            i = 0
-            for a in x:
-                flatten(a, name + str(i) + '_')
-                i += 1
+        
         else:
             out[name[:-1]] = x
 
@@ -36,6 +32,11 @@ if data_file == None:
 else:
     data = json.load(data_file)
     json_Data=pd.DataFrame([flatten_json(x) for x in data['events']])
+    s = json_Data.apply(lambda x: pd.Series(x['payload_messages']),axis=1).stack().reset_index(level=1, drop=True)
+    s.name = 'payload_message'
+    json_Data=json_Data.drop('payload_messages',axis=1).join(s)
+    first_column = json_Data.pop('payload_message')
+    json_Data.insert(19, 'payload_message', first_column)
     st.dataframe(json_Data)
     st.write("Filename: ", data_file.name)
     st.write("output file name",str(data_file.name)[:-5]+"_output.csv")
