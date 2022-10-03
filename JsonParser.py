@@ -3,7 +3,7 @@ import streamlit as st
 import json
 import pandas as pd
 import os
-st.title("Hi, welcome to Saras")
+st.title("Json Parser")
 st.title("Upload a json file to get the data in tabular format")
 data_file = st.file_uploader("Choose a file",type='json')
 count = 0
