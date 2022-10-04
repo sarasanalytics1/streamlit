@@ -72,8 +72,9 @@ if data_file == None:
     st.write("Please upload the File")
 else:
     data = json.load(data_file)
-    #st.write(data)
-    json_Data=pd.DataFrame([flatten_json(x) for x in data['events']])
+    s=list(data.keys())[0]
+    st.write(s)
+    json_Data=pd.DataFrame([flatten_json(x) for x in data[s]])
     #st.write(json_Data)
     for i in json_Data.columns:
     #print(str(type(json_Data[i].iloc[1])),i)
