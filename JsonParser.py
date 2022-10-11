@@ -1,8 +1,12 @@
+#from _typeshed import NoneType
 from re import I
+from numpy import NAN, NaN
 import streamlit as st
 import json
 import pandas as pd
 import os
+
+#from streamlit.proto.Json_pb2 import Json
 st.title("Json Parser")
 st.subheader("Upload a json file to get the data in tabular format")
 data_file = st.file_uploader("Choose a file",type='json')
@@ -73,7 +77,7 @@ if data_file == None:
 else:
     data = json.load(data_file)
     s=list(data.keys())[0]
-    st.write(s)
+    #st.write(s)
     json_Data=pd.DataFrame([flatten_json(x) for x in data[s]])
     #st.write(json_Data)
     for i in json_Data.columns:
@@ -95,8 +99,7 @@ else:
             #st.dataframe(json_Data)
 
 
-        if count >= 1:
-            break
+        
 
     #st.dataframe(hi["payload_messages."])
     #st.write((type(hi['payload_messages.'].iloc[8])))
@@ -145,8 +148,77 @@ else:
             for i in json_Data.columns:
                 if i == "level_0":
                     json_Data = json_Data.drop("level_0",axis=1)
-    st.dataframe(json_Data)           
 
+
+
+    #st.dataframe(json_Data)           
+    msg_cols = [col for col in json_Data.columns if 'payload_messages' in col]
+    msg_col = msg_cols.append("_internal_adb_props.label")
+    #msg_cols= list(msg_cols)
+    df=json_Data[msg_cols]
+    json_Data=df[df['_internal_adb_props.label'] == 'hitReceived']
+    json_Data.reset_index(inplace=True,drop=True)
+    #df=df.T
+    #st.dataframe(json_Data)
+
+
+
+
+
+    for i in json_Data.columns:
+        if type(json_Data[i].iloc[2]) is list:
+            s = json_Data.apply(lambda x: pd.Series(x[i]),axis=1).stack().reset_index(level=1, drop=True)
+            s.name = i + '.'
+            index_no = json_Data.columns.get_loc(i)
+            json_Data=json_Data.drop([i],axis=1)
+            json_Data=json_Data.join(s)
+            count =count+1
+            first_column = json_Data.pop(s.name)
+            json_Data.insert(index_no, s.name, first_column)
+            #st.write('list')
+            #st.dataframe(json_Data)
+            
+    for i in json_Data.columns:
+        if type(json_Data[i].iloc[3]) is dict:
+            f=(json_Data[i].apply(pd.Series))
+            #st.write('dict')
+            #st.dataframe(f)
+            json_Data=json_Data.drop(i,axis=1)
+            json_Data = pd.concat([json_Data, f], axis=1)
+            #st.dataframe(json_Data)
+            #st.write('done')
+            break
+    
+    json_Data.reset_index(inplace=True,drop=True)
+    json_Data=json_Data.astype(str)
+    #json_Data = json_Data.T
+    #st.dataframe(json_Data)
+    #st.write((json_Data['_merchVars'].iloc[1]))
+    #json_Data['_merchVars']= json_Data['_merchVars'].astype('str')
+    json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: x.replace("\'", "\""))
+    json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: json.loads(x) if x != "nan" else None)
+    
+
+
+    for i in json_Data.columns:
+        if type(json_Data[i].iloc[3]) is dict:
+            f=(json_Data[i].apply(pd.Series))
+            #st.write('dict')
+            #st.dataframe(f)
+            json_Data=json_Data.drop(i,axis=1)
+            json_Data = pd.concat([json_Data, f], axis=1)
+            #st.dataframe(json_Data)
+            #st.write('done')
+           
+    json_Data['index']=json_Data.index
+    #st.dataframe(json_Data)
+    json_Data['index']=json_Data['index'].apply(lambda x: str(x))
+    #st.write(type(json_Data['index'].iloc[3]))
+    json_Data.index= json_Data['index']
+    #st.write("before Transform")
+    #st.dataframe(json_Data)
+    json_Data = json_Data.T
+    
     st.write("Filename: ", data_file.name)
     st.write("output file name",str(data_file.name)[:-5]+"_output.csv")
     #st.write(os.sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'HasOffers_POSTCalls')))
