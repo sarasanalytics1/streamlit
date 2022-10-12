@@ -209,17 +209,17 @@ else:
 
     for i in json_Data.columns:
         if type(json_Data[i].iloc[3]) is dict:
-            st.write(i)
+            #st.write(i)
             f=(json_Data[i].apply(pd.Series))
             #st.write('dict')
-            st.dataframe(f)
+            #st.dataframe(f)
             json_Data=json_Data.drop(i,axis=1)
             json_Data = pd.concat([json_Data, f], axis=1)
             #st.dataframe(json_Data)
             #st.write('done')
            
     json_Data['index']=json_Data.index
-    st.dataframe(json_Data)
+    #st.dataframe(json_Data)
     json_Data['index']=json_Data['index'].apply(lambda x: str(x))
     #st.write(type(json_Data['index'].iloc[3]))
     json_Data.index= json_Data['index']
