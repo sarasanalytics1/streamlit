@@ -1,6 +1,7 @@
 #from _typeshed import NoneType
 from re import I
 from numpy import NAN, NaN
+import numpy as np
 import streamlit as st
 import json
 import pandas as pd
@@ -44,7 +45,7 @@ def flatten_json(nested_json, exclude=['']):
     return out
 
 def flatten_nested_json_df(df):
-        df = df.reset_index()
+        #df = df.reset_index()
         s = (df.applymap(type) == list).all()
         list_columns = s[s].index.tolist()
     
@@ -159,9 +160,12 @@ else:
     #msg_cols= list(msg_cols)
     df=json_Data[msg_cols]
     json_Data=df[df['_internal_adb_props.label'] == 'hitReceived']
-    json_Data.reset_index(inplace=True,drop=True)
+    #json_Data.reset_index(inplace=True,drop=True)
     #df=df.T
+    json_Data= json_Data[json_Data['payload_messages.']!='Request received by Experience Edge.']
+    #json_Data.drop(df_new,axis = 0 ,inplace= True)
     #st.dataframe(json_Data)
+    
 
 
 
@@ -194,35 +198,34 @@ else:
             #st.write('done')
             #break
     
-    json_Data.reset_index(inplace=True,drop=True)
+    #json_Data.reset_index(inplace=True,drop=True)
     json_Data=json_Data.astype(str)
-    #json_Data = json_Data.T
-    #st.dataframe(json_Data)
-    #st.write((json_Data['_merchVars'].iloc[1]))
-    #json_Data['_merchVars']= json_Data['_merchVars'].astype('str')
-    #for i in json_Data.columns:
-        #if i == '_merchVars':
+    
     json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: x.replace("\'", "\""))
     json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: json.loads(x) if x != "nan" else None)
     
-
+    #st.dataframe(json_Data)
 
     for i in json_Data.columns:
-        if type(json_Data[i].iloc[3]) is dict:
+        if i == '_merchVars':
+        #if type(json_Data[i].iloc[3]) is dict:
             #st.write(i)
             f=(json_Data[i].apply(pd.Series))
+            f['index']=json_Data.index
+            f.drop_duplicates(inplace=True,subset='index')
             #st.write('dict')
             #st.dataframe(f)
             json_Data=json_Data.drop(i,axis=1)
             json_Data = pd.concat([json_Data, f], axis=1)
+            json_Data.drop_duplicates(inplace=True,subset='index')
             #st.dataframe(json_Data)
             #st.write('done')
-           
-    json_Data['index']=json_Data.index
-    #st.dataframe(json_Data)
-    json_Data['index']=json_Data['index'].apply(lambda x: str(x))
+          
+    json_Data.reset_index(inplace=True,drop=True)
+    json_Data.drop('index',axis=1,inplace=True)
+    #st.dataframe(json_Data) 
     #st.write(type(json_Data['index'].iloc[3]))
-    json_Data.index= json_Data['index']
+    
     json_Data=json_Data.reindex(columns=['payload_messages..event.xdm.mobile.mobilePageDetails.siteRegion','payload_messages..event.xdm.mobile.mobilePageDetails.language',
     'payload_messages..xdm.mobile.mobilePageDetails.pageType','payload_messages..event.xdm.mobile.mobilePageDetails.siteSection','payload_messages..event.xdm.web.webPageDetails.name',
     'web.webPageDetails.pageViews','payload_messages..event.xdm.mobile.mobilePageDetails.pageViews.value','payload_messages..event.xdm.web.webInteraction.linkClicks.value','payload_messages..xdm.web.webInteraction.name',
@@ -230,9 +233,56 @@ else:
     'payload_messages..event.xdm.commerce.productListOpens.value','payload_messages..event.xdm.mobile.mobilePageDetails.subPageName','payload_messages..event.xdm.shoppingCart.cartEdits.value','payload_messages..event.xdm.commerce.checkouts.value','payload_messages..event.xdm.commerce.checkoutFunnelInteractions.value','payload_ACPExtensionEventData_xdm_commerce_funnelName',
     'payload_messages..event.xdm.commerce.retrievalType','payload_messages..event.xdm.commerce.purchases.value','payload_messages..xdm.commerce.order.purchaseID','payload_messages..xdm.commerce.order.taxRevenue','payload_messages..xdm.commerce.order.feeRevenue','payload_messages..xdm.commerce.order.donationRevenue','payload_messages..event.xdm.commerce.order.groupOrderParticipants',
     'payload_messages..event.xdm.commerce.order.paymentMethod','payload_currency-code','payload_ACPExtensionEventData_xdm_commerce_order_pickupTime','payload_ACPExtensionEventData_xdm_commerce_checkoutType'])
-    
+    json_Data.rename(columns={
+        'payload_messages..event.xdm.mobile.mobilePageDetails.siteRegion':'/web/webPageDetails/siteRegion',
+        'payload_messages..event.xdm.mobile.mobilePageDetails.language': '/web/webPageDetails/Language',
+        'payload_messages..xdm.mobile.mobilePageDetails.pageType' : '/web/webPageDetails/pageType',
+        'payload_messages..event.xdm.mobile.mobilePageDetails.siteSection':'/web/webPageDetails/siteSection',
+        'payload_messages..event.xdm.web.webPageDetails.name': '/web/webPageDetails/name',
+        #'web.webPageDetails.pageViews': 
+        'payload_messages..event.xdm.mobile.mobilePageDetails.pageViews.value':'/web/webPageDetails/pageViews/value' ,
+        'payload_messages..event.xdm.web.webInteraction.linkClicks.value':'/web/webInteraction/linkClicks/value',
+        'payload_messages..xdm.web.webInteraction.name': '/web/webInteraction/name',
+        'payload_messages..event.xdm.web.webInteraction.type':'/web/webInteraction/type',
+        'topThingsChoice': '/productListItems/0/_merchVars/topThingsChoice',
+        'otherOptions': '/productListItems/0/_merchVars/otherOptions',
+        'includedSides': '/productListItems/0/_merchVars/includedSides',
+        'drinks':'/productListItems/0/_merchVars/drinks',
+        'riceChoice':'/productListItems/0/_merchVars/riceChoice',
+        'beansChoice':'/productListItems/0/_merchVars/beansChoice',
+        'productName':'/productListItems/0/_merchVars/productName',
+        'proteinChoice':'/productListItems/0/_merchVars/proteinChoice',
+        'SKU':'/productListItems/0/_merchVars/SKU',
+        'name':'/productListItems/0/_merchVars/name',
+        'quantity':'/productListItems/0/_merchVars/quantity',
+        'priceTotal':'/productListItems/0/_merchVars/priceTotal',
+        'payload_messages..event.xdm.commerce.productListAdds.value':'/commerce/productListAdds/value',
+        'payload_messages..event.xdm.commerce.productListOpens.value':'/commerce/productListOpens/value',
+        'payload_messages..event.xdm.mobile.mobilePageDetails.subPageName':'/web/webPageDetails/subPageName',
+        'payload_messages..event.xdm.shoppingCart.cartEdits.value':'/shoppingCart/cartEdits/value',
+        'payload_messages..event.xdm.commerce.checkouts.value': '/commerce/checkouts/value',
+        'payload_messages..event.xdm.commerce.checkoutFunnelInteractions.value':'checkoutFunnelInteractions',
+        'payload_ACPExtensionEventData_xdm_commerce_funnelName': '/commerce/funnelName',
+    'payload_messages..event.xdm.commerce.retrievalType':'/commerce/retrievalType',
+    'payload_messages..event.xdm.commerce.purchases.value': '/commerce/purchases/value',
+    'payload_messages..xdm.commerce.order.purchaseID': '/commerce/order/purchaseID',
+    'payload_messages..xdm.commerce.order.taxRevenue':'/commerce/order/taxRevenue',
+    'payload_messages..xdm.commerce.order.feeRevenue':'/commerce/order/feeRevenue',
+    'payload_messages..xdm.commerce.order.donationRevenue':'/commerce/order/donationRevenue',
+    'payload_messages..event.xdm.commerce.order.groupOrderParticipants':'/commerce/order/groupOrderParticipants',
+    'payload_messages..event.xdm.commerce.order.paymentMethod':'/commerce/order/paymentMethod',
+    'payload_currency-code':'/commerce/order/currencyCode',
+    'payload_ACPExtensionEventData_xdm_commerce_order_pickupTime':'/commerce/order/pickupTime',
+    'payload_ACPExtensionEventData_xdm_commerce_checkoutType': '/commerce/checkoutType'
+
+    },inplace=True)
+    json_Data=json_Data.replace('nan', '')
+    json_Data.drop_duplicates(inplace=True)
+    #st.dataframe(json_Data)
     #st.write("before Transform")
     #st.dataframe(json_Data)
+    json_Data.reset_index(inplace=True,drop=True)
+    json_Data.index = np.arange(1, len(json_Data) + 1)
     json_Data = json_Data.T
     
     st.write("Filename: ", data_file.name)
