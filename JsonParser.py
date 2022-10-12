@@ -79,10 +79,12 @@ else:
     s=list(data.keys())[0]
     #st.write(s)
     json_Data=pd.DataFrame([flatten_json(x) for x in data[s]])
-    #st.write(json_Data)
+    #st.dataframe(json_Data)
+
     for i in json_Data.columns:
     #print(str(type(json_Data[i].iloc[1])),i)
-        if type(json_Data[i].iloc[1]) is list:
+
+        if i == "payload_messages":
             #st.write(i)
             s = json_Data.apply(lambda x: pd.Series(x[i]),axis=1).stack().reset_index(level=1, drop=True)
             s.name = i + '.'
@@ -152,7 +154,7 @@ else:
 
 
     #st.dataframe(json_Data)           
-    msg_cols = [col for col in json_Data.columns if 'payload_messages' in col]
+    msg_cols = [col for col in json_Data.columns if 'payload' in col]
     msg_col = msg_cols.append("_internal_adb_props.label")
     #msg_cols= list(msg_cols)
     df=json_Data[msg_cols]
@@ -166,7 +168,8 @@ else:
 
 
     for i in json_Data.columns:
-        if type(json_Data[i].iloc[2]) is list:
+        if i=='payload_messages..event.xdm.productListItems':
+            #st.write("productlist")
             s = json_Data.apply(lambda x: pd.Series(x[i]),axis=1).stack().reset_index(level=1, drop=True)
             s.name = i + '.'
             index_no = json_Data.columns.get_loc(i)
@@ -179,15 +182,17 @@ else:
             #st.dataframe(json_Data)
             
     for i in json_Data.columns:
-        if type(json_Data[i].iloc[3]) is dict:
+        if i == 'payload_messages..event.xdm.productListItems.':
+        #if type(json_Data[i].iloc[3]) is dict:
             f=(json_Data[i].apply(pd.Series))
             #st.write('dict')
+            #st.write(i)
             #st.dataframe(f)
             json_Data=json_Data.drop(i,axis=1)
             json_Data = pd.concat([json_Data, f], axis=1)
             #st.dataframe(json_Data)
             #st.write('done')
-            break
+            #break
     
     json_Data.reset_index(inplace=True,drop=True)
     json_Data=json_Data.astype(str)
@@ -195,6 +200,8 @@ else:
     #st.dataframe(json_Data)
     #st.write((json_Data['_merchVars'].iloc[1]))
     #json_Data['_merchVars']= json_Data['_merchVars'].astype('str')
+    #for i in json_Data.columns:
+        #if i == '_merchVars':
     json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: x.replace("\'", "\""))
     json_Data['_merchVars'] = json_Data['_merchVars'].apply(lambda x: json.loads(x) if x != "nan" else None)
     
@@ -202,19 +209,28 @@ else:
 
     for i in json_Data.columns:
         if type(json_Data[i].iloc[3]) is dict:
+            st.write(i)
             f=(json_Data[i].apply(pd.Series))
             #st.write('dict')
-            #st.dataframe(f)
+            st.dataframe(f)
             json_Data=json_Data.drop(i,axis=1)
             json_Data = pd.concat([json_Data, f], axis=1)
             #st.dataframe(json_Data)
             #st.write('done')
            
     json_Data['index']=json_Data.index
-    #st.dataframe(json_Data)
+    st.dataframe(json_Data)
     json_Data['index']=json_Data['index'].apply(lambda x: str(x))
     #st.write(type(json_Data['index'].iloc[3]))
     json_Data.index= json_Data['index']
+    json_Data=json_Data.reindex(columns=['payload_messages..event.xdm.mobile.mobilePageDetails.siteRegion','payload_messages..event.xdm.mobile.mobilePageDetails.language',
+    'payload_messages..xdm.mobile.mobilePageDetails.pageType','payload_messages..event.xdm.mobile.mobilePageDetails.siteSection','payload_messages..event.xdm.web.webPageDetails.name',
+    'web.webPageDetails.pageViews','payload_messages..event.xdm.mobile.mobilePageDetails.pageViews.value','payload_messages..event.xdm.web.webInteraction.linkClicks.value','payload_messages..xdm.web.webInteraction.name',
+    'payload_messages..event.xdm.web.webInteraction.type','topThingsChoice','otherOptions','includedSides','drinks','riceChoice','beansChoice','productName','proteinChoice','SKU','name','quantity','priceTotal','payload_messages..event.xdm.commerce.productListAdds.value',
+    'payload_messages..event.xdm.commerce.productListOpens.value','payload_messages..event.xdm.mobile.mobilePageDetails.subPageName','payload_messages..event.xdm.shoppingCart.cartEdits.value','payload_messages..event.xdm.commerce.checkouts.value','payload_messages..event.xdm.commerce.checkoutFunnelInteractions.value','payload_ACPExtensionEventData_xdm_commerce_funnelName',
+    'payload_messages..event.xdm.commerce.retrievalType','payload_messages..event.xdm.commerce.purchases.value','payload_messages..xdm.commerce.order.purchaseID','payload_messages..xdm.commerce.order.taxRevenue','payload_messages..xdm.commerce.order.feeRevenue','payload_messages..xdm.commerce.order.donationRevenue','payload_messages..event.xdm.commerce.order.groupOrderParticipants',
+    'payload_messages..event.xdm.commerce.order.paymentMethod','payload_currency-code','payload_ACPExtensionEventData_xdm_commerce_order_pickupTime','payload_ACPExtensionEventData_xdm_commerce_checkoutType'])
+    
     #st.write("before Transform")
     #st.dataframe(json_Data)
     json_Data = json_Data.T
