@@ -340,7 +340,7 @@ else:
     #st.dataframe(json_Data)
     
     n=json_Data[json_Data.duplicated()]
-    st.write(n.index)
+    #st.write(n.index)
     for i in n.index:
         json_Data.loc[i,'KILL(its redundant or not needed)']='Duplicate'
 
@@ -411,13 +411,18 @@ else:
     #st.write(s)
     json_Data=pd.DataFrame([flatten_json_web(x) for x in data_web[s]])
     t=json_Data
-    #st.write(json_Data.shape)
-
+    
     
     #st.dataframe(json_Data)           
     #msg_cols = [col for col in json_Data.columns if 'payload_ACP' in col]
-    # = msg_cols.append("_internal_adb_props.label")
-    #msg_cols= list(msg_cols)
+    #st.write(msg_cols)
+    #msg_cols= (msg_cols)+["_internal_adb_props.label"]
+    #msg_cols= msg_cols.append("_internal_adb_props.label")
+    #st.write(msg_cols)
+    #msg_cols= msg_cols.append()
+    #msg_cols=msg_cols.append()
+    #msg_cols= (msg_cols)+["timestamp"]
+
     #json_Data=json_Data[msg_cols]
     #st.write('acp')
     #st.dataframe(json_Data)
@@ -425,18 +430,6 @@ else:
 
   
     json_Data=json_Data[json_Data['_internal_adb_props.label'] == 'Alloy Request']
-    #st.write('alloy_Request')
-    #st.dataframe(Data)
-    #st.write("data",json_Data.shape)
-
-    #json_Data.reset_index(inplace=True,drop=True)
-    #df=df.T
-    #st.dataframe(json_Data)
-
-
-    #json_Data= json_Data[json_Data['payload_messages.']!='Request received by Experience Edge.']
-    #json_Data.drop(df_new,axis = 0 ,inplace= True)
-    #st.dataframe(json_Data)
     
 
 
@@ -451,7 +444,6 @@ else:
             index_no = json_Data.columns.get_loc(i)
             json_Data=json_Data.drop([i],axis=1)
             json_Data=json_Data.join(s)
-            count =count+1
             first_column = json_Data.pop(s.name)
             json_Data.insert(index_no, s.name, first_column)
             #st.write('list')
@@ -465,14 +457,16 @@ else:
         if i == 'payload_ACPExtensionEventData_xdm_productListItems.':
         #if type(json_Data[i].iloc[3]) is dict:
             f=(json_Data[i].apply(pd.Series))
-            #st.write('dict')
-            #st.write(i)
-            #st.dataframe(f)
+            
             json_Data=json_Data.drop(i,axis=1)
             json_Data = pd.concat([json_Data, f], axis=1)
-            #st.dataframe(json_Data)
-            #st.write('done')
-            #break
+            #st.write(len(list(json_Data.columns)))
+            #st.write(len(set(list(json_Data.columns))))
+            from collections import Counter
+            counts = dict(Counter(json_Data.columns))
+            duplicates = {key:value for key, value in counts.items() if value > 1}
+            #st.write('fgs')
+            #st.write(duplicates)
     #st.dataframe(json_Data)
     #json_Data.reset_index(inplace=True,drop=True)
     #json_Data=json_Data.astype(str)
@@ -488,23 +482,20 @@ else:
         #if type(json_Data[i].iloc[3]) is dict:
             #st.write(i)
             f=(json_Data[i].apply(pd.Series))
-            f['index']=json_Data.index
-            f.drop_duplicates(inplace=True,subset='index')
-            #st.write('dict')
-            #st.dataframe(json_Data)
-            #st.write(json_Data.shape)
-            #st.dataframe(f)
-            #st.write(f.shape)
-            json_Data['index']=json_Data.index
-            #st.write(json_Data.shape)
-            #json_Data=pd.merge(json_Data, f, on = "index")
-            #json_Data=json_Data.drop(i,axis=1)
+            #f['index']=json_Data.index
             
-            #json_Data = pd.concat([json_Data, f], axis=1)
-            #st.dataframe(json_Data)
-            #json_Data.drop_duplicates(inplace=True,subset='index')
-            #st.dataframe(json_Data)
-            #st.write('done')
+            
+            #json_Data['index']=json_Data.index
+            
+            #st.write(json_Data.index.duplicated())
+            json_Data = pd.concat([json_Data, f], axis=1)
+            json_Data.dropna(how='all', axis=1,inplace=True)
+            from collections import Counter
+            counts = dict(Counter(json_Data.columns))
+            duplicates = {key:value for key, value in counts.items() if value > 1}
+            #st.write('index')
+            #st.write(duplicates)
+            #json_Data.rename(columns={'0':'waste'},inplace=True)
     #st.write('after _merchvar',json_Data.shape)
     #st.dataframe(json_Data)      
     json_Data.reset_index(inplace=True,drop=True)
@@ -520,8 +511,9 @@ else:
     json_Data.reset_index(inplace=True,drop=True)
     json_Data.index = np.arange(1, len(json_Data) + 1)
     json_Data['Column Name']=json_Data.index
+    #st.write(len(json_Data.columns))
+    #st.write(len(set(json_Data.columns)))
     
-    json_Data.set_index('Column Name',inplace=True)
     #st.dataframe(json_Data)
     json_Data=json_Data.reindex(columns=['Consolidate with previous or Next Event',
     'KILL(its redundant or not needed)',
@@ -530,13 +522,8 @@ else:
     'Date',
     'Time',
     'payload_ACPExtensionEventData_xdm_eventType',
-    'payload_ACPExtensionEventData_xdm_web_webPageDetails_URL',
-    'payload_ACPExtensionEventData_xdm_web_webPageDetails_siteRegion',
-'payload_ACPExtensionEventData_xdm_web_webPageDetails_language',
-'payload_ACPExtensionEventData_xdm_web_webPageDetails_pageType',
-'payload_ACPExtensionEventData_xdm_web_webPageDetails_siteRegion',
-'payload_ACPExtensionEventData_xdm_web_webPageDetails_name',
-'payload_ACPExtensionEventData_xdm_web_pageViews_value',
+    'payload_ACPExtensionEventData_xdm_web_webPageDetails_name',
+    'payload_ACPExtensionEventData_xdm_web_pageViews_value',
 'payload_ACPExtensionEventData_xdm_web_menuPageViews_value',
 'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection1',
 'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection2',
@@ -550,23 +537,17 @@ else:
 'payload_ACPExtensionEventData_xdm_web_pageType',
 'payload_ACPExtensionEventData_xdm_web_siteSection',
 'payload_ACPExtensionEventData_xdm_web_name',
-'payload_ACPExtensionEventData_xdm_web_pageViews_value',
-'payload_ACPExtensionEventData_xdm_web_menuPageViews_value',
 'payload_ACPExtensionEventData_xdm_web_subSection1',
 'payload_ACPExtensionEventData_xdm_web_subSection2',
 'payload_ACPExtensionEventData_xdm_web_page',
 'payload_ACPExtensionEventData_xdm_web_subPageName',
 'payload_ACPExtensionEventData_xdm_web_subPageViews_value',
-'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_linkModuleName',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_name',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_type',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaClicks_value',
-'payload_ACPExtensionEventData_xdm_web_webInteraction_name',
-'payload_ACPExtensionEventData_xdm_web_webInteraction_name',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_type',
-'payload_ACPExtensionEventData_xdm_web_webInteraction_linkModuleName',
 'payload_ACPExtensionEventData_xdm__chipotle_loginStatus',
 'payload_ACPExtensionEventData_xdm__chipotle_devicePlatform',
 'payload_ACPExtensionEventData_xdm__chipotle_orderNowClicks_value',
@@ -593,11 +574,64 @@ else:
 'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar9',
 'payload_ACPExtensionEventData_xdm_marketing_internalCampaign',
 'payload_ACPExtensionEventData_xdm_marketing_internalCampaignClicks_value',
-'_internal_adb_props.label',
 'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaNameType',
 'topThingsChoice','otherOptions','includedSides','drinks','riceChoice','beansChoice','productName','proteinChoice','SKU','name','quantity','priceTotal',
-    '_internal_adb_props.label'])
+    '_internal_adb_props.label'
+    ])
     json_Data.rename(columns={
+        'payload_ACPExtensionEventData_xdm_web_pageViews_value':'web/pageViews/value',
+        'payload_ACPExtensionEventData_xdm_web_menuPageViews_value':'web/MenuPageViews/Value',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection1':'web/PageDetails/subSection1',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection2':'web/PageDetails/subSection2',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_page':'/web/webPageDetails/page',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageName': '/web/webPageDetails/subPageName',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageViews_value':'/web/webPageDetails/subPageViews/Value',
+        'payload_ACPExtensionEventData_xdm_web_webReferrer_URL':'/web/webReferrer/URL',
+        'payload_ACPExtensionEventData_xdm_web_siteRegion':'web/siteRegion',
+        'payload_ACPExtensionEventData_xdm_web_language':'web/Language',
+        'payload_ACPExtensionEventData_xdm_web_URL':'web/URL',
+        'payload_ACPExtensionEventData_xdm_web_pageType':'web/PageType',
+        'payload_ACPExtensionEventData_xdm_web_siteSection':'web/Sitesection',
+        'payload_ACPExtensionEventData_xdm_web_name':'web/name',
+        'payload_ACPExtensionEventData_xdm_web_subSection1':'web/subsection1',
+        'payload_ACPExtensionEventData_xdm_web_subSection2': 'web/subsection2',
+        'payload_ACPExtensionEventData_xdm_web_page':'web/page',
+        'payload_ACPExtensionEventData_xdm_web_subPageName' :'web/subPageName',
+        'payload_ACPExtensionEventData_xdm_web_subPageViews_value': 'web/subPageView',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkModuleName':'web/webInteraction/linkModuleName',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_name':'web/WebInteraction/name',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'web/webInteraction/type',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaClicks_value':'ctaClicks/value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'LinkClick/value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'webinteraction/type',
+        'payload_ACPExtensionEventData_xdm__chipotle_loginStatus': '_chipotle/loginStatus',
+        'payload_ACPExtensionEventData_xdm__chipotle_devicePlatform':'_chipotle/devicePlatform',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderNowClicks_value': '_chipotle/orderNowClick/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_errors_value':'_chipotle/errors/Value',
+        'payload_ACPExtensionEventData_xdm__chipotle_errorName':'_chipotle/ErrorName',
+        'payload_ACPExtensionEventData_xdm__chipotle_storeId':'_chipotle/storeID',
+        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressSubmitted_value':'_chipotle/deliveryAddressSubmitted/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_formNameDetails':'_chipotle/formNameDetails',
+        'payload_ACPExtensionEventData_xdm__chipotle_loginType':'_chipotle/loginType',
+        'payload_ACPExtensionEventData_xdm__chipotle_accountInteraction_value':'_chipotle/accountInteraction/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_registrationType':'_chipotle/registrationType',
+        'payload_ACPExtensionEventData_xdm__chipotle_interactionName':'_chipotle/interactionName',
+        'payload_ACPExtensionEventData_xdm__chipotle_addAddressDetails_value':'_chipotle/addAddressDetails/values',
+        'payload_ACPExtensionEventData_xdm__chipotle_geoSearched':'_chipotle/geoSearched',
+        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressLookup_value':'_chipotle/deliveryAddresslookup/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_searchType':'_chipotle/searchType',
+        'payload_ACPExtensionEventData_xdm__chipotle_cartEdits_value':'_chipotle/cardEdits/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_mealNameGiven_value':'_chipotle/mealNameGiven/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplications_value':'_chipotle/orderDupications/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplicates_value':'_chipotle/orderDuplicates/value',
+        'payload_ACPExtensionEventData_xdm__chipotle_availablePoints':'_chipotle/avaiblePoints',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar60':'eVars/evar60',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar47':'evars/evar47',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar9':'evars/eVar9',
+        'payload_ACPExtensionEventData_xdm_marketing_internalCampaign':'marketing_internalCampain',
+        'payload_ACPExtensionEventData_xdm_marketing_internalCampaignClicks_value':'internalCampainClicks/Value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaNameType':'webinteraction/ctaNameType',
+
         'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteRegion':'/web/webPageDetails/siteRegion',
         'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language': '/web/webPageDetails/Language',
         'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageType' : '/web/webPageDetails/pageType',
