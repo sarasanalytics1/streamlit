@@ -6,7 +6,9 @@ import streamlit as st
 import json
 import pandas as pd
 import os
-import datetime
+import pytz
+
+from datetime import datetime
 t='<h2 style= color:Red; font-size: 10px;">For IOS And Android upload Json below</h2>'
 #from streamlit.proto.Json_pb2 import Json
 st.title("Json Parser")
@@ -201,22 +203,31 @@ else:
     #st.dataframe(json_Data) 
     #st.write(type(json_Data['index'].iloc[3]))
     json_Data.sort_values('timestamp',inplace=True)
-    json_Data['timestamp'] = json_Data['timestamp'].apply(lambda x: datetime.datetime.fromtimestamp(int(str(x[0:10]))).isoformat())
+    #st.dataframe(json_Data)
+    json_Data['timestamp'] = pd.to_datetime(json_Data['timestamp'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('US/Pacific')
+    #st.dataframe(json_Data)
+    #json_Data['timestamp']= pd.to_datetime(json_Data['timestamp'].tz_convert(pytz.timezone('US/Pacific')))
+    
+    #st.write((json_Data['timestamp'].iloc[1]))
+    #json_Data['timestamp'] = json_Data['payload_ACPExtensionEventTimestamp'].apply(lambda x: datetime.datetime.fromtimestamp(int(str(x[0:12]))).isoformat())
     json_Data['Date']=json_Data['timestamp'].apply(lambda x:str(x)[:10])
-    json_Data['Time']=json_Data['timestamp'].apply(lambda x:str(x)[12:])
+    json_Data['Time/PST']=json_Data['timestamp'].apply(lambda x:str(x)[11:19])
+    json_Data['Time/PST']=json_Data['Time/PST'].apply(lambda x: datetime.strptime(x, "%H:%M:%S").strftime("%I:%M :%S %p"))
+    #st.dataframe(json_Data)
+    #st.write(type(json_Data['timestamp'].iloc[1]))
     json_Data=json_Data.replace('nan', '')
     json_Data.reset_index(inplace=True,drop=True)
     json_Data.index = np.arange(1, len(json_Data) + 1)
-    json_Data['Column Name']=json_Data.index
     
-    json_Data.set_index('Column Name',inplace=True)
+    
+    
     #st.dataframe(json_Data)
-    json_Data=json_Data.reindex(columns=['Consolidate with previous or Next Event',
+    json_Data=json_Data.reindex(columns=['Server Hits','Consolidate with previous or Next Event',
     'KILL(its redundant or not needed)',
     'Whats this? "Special effect or missing event name "',
     'Notes',
     'Date',
-    'Time',
+    'Time/PST',
     'payload_ACPExtensionEventData_xdm_eventType',
     'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language',
     'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteSection',
@@ -231,7 +242,7 @@ else:
     'payload_ACPExtensionEventData_xdm_web_webInteraction_name',
     'payload_ACPExtensionEventData_xdm_user_devicePlatform',
     'payload_ACPExtensionEventData_xdm_crewTipCount_value',
-    'payload_ACPExtensionEventData_xdm_crewTipCount_value',
+    #'payload_ACPExtensionEventData_xdm_crewTipCount_value',
     'payload_ACPExtensionEventData_xdm_commerce_order_groupOrderParticipants',
     'payload_ACPExtensionEventData_xdm_commerce_order_purchaseID',
     'topThingsChoice','otherOptions','includedSides','drinks','riceChoice','beansChoice','productName','proteinChoice','SKU','name','quantity','priceTotal',
@@ -266,68 +277,69 @@ else:
     'payload_ACPExtensionEventData_xdm_application_name',
     '_internal_adb_props.label'])
     json_Data.rename(columns={
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteRegion':'/web/webPageDetails/siteRegion',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language': '/web/webPageDetails/Language',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageType' : '/web/webPageDetails/pageType',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteSection':'/web/webPageDetails/siteSection',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_name': '/web/webPageDetails/name',
+        'Time/PST':'Time(PST Timezone)',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteRegion':'web.webPageDetails.siteRegion',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language': 'web.webPageDetails.Language',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageType' : 'web.webPageDetails.pageType',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteSection':'web.webPageDetails.siteSection',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_name': 'web.webPageDetails.name',
         #'web.webPageDetails.pageViews': 
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_previousPage':'mobile/mobilePageDetails/previousPage',
-        'payload_ACPExtensionEventData_xdm_user_devicePlatform':'user/devicePlatform',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_previousPage':'mobile.mobilePageDetails.previousPage',
+        'payload_ACPExtensionEventData_xdm_user_devicePlatform':'user.devicePlatform',
         'payload_ACPExtensionEventData_xdm_crewTipCount_value': "crewTipCount_value",
         #'payload_ACPExtensionEventData_xdm_crewTipCount_value',
-        'payload_ACPExtensionEventData_xdm_commerce_order_orderID' :'commerce/order/orderID',
-        'payload_ACPExtensionEventData_xdm_commerce_order_driverTipRevenue':'commerce/order/driverTipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_order_crewTipRevenue':'commerce/order/crewTipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_order_tipRevenue':'commerce/order/tipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_selectLocation_value':'commerce/selectLocation/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListViews_value':'commerce/productListViews/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListRemovals_value':'commerce/productListRemovals/value',
+        'payload_ACPExtensionEventData_xdm_commerce_order_orderID' :'commerce.order.orderID',
+        'payload_ACPExtensionEventData_xdm_commerce_order_driverTipRevenue':'commerce.order.driverTipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_order_crewTipRevenue':'commerce.order.crewTipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_order_tipRevenue':'commerce.order.tipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_selectLocation_value':'commerce.selectLocation.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListViews_value':'commerce.productListViews.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListRemovals_value':'commerce.productListRemovals.value',
         'payload_ACPExtensionEventData_xdm_isDelivery':'isDelivery',
-        'payload_ACPExtensionEventData_xdm_storeLocator_storeID':'storeLocator_storeID',
-        'payload_ACPExtensionEventData_xdm_storeLocator_pickupLocation_value':'storeLocator_pickupLocation_value',
-        'payload_ACPExtensionEventData_xdm_storeLocator_searchType':'storeLocator_searchType',
-        'payload_ACPExtensionEventData_xdm_storeLocator_locationSelected_value':'storeLocator_locationSelected_value',
-        'payload_ACPExtensionEventData_xdm_storeLocator_searchInitiated_value':'storeLocator_searchInitiated_value',
+        'payload_ACPExtensionEventData_xdm_storeLocator_storeID':'storeLocator.storeID',
+        'payload_ACPExtensionEventData_xdm_storeLocator_pickupLocation_value':'storeLocator.pickupLocation.value',
+        'payload_ACPExtensionEventData_xdm_storeLocator_searchType':'storeLocator.searchType',
+        'payload_ACPExtensionEventData_xdm_storeLocator_locationSelected_value':'storeLocator.locationSelected.value',
+        'payload_ACPExtensionEventData_xdm_storeLocator_searchInitiated_value':'storeLocator.searchInitiated.value',
         'payload_ACPExtensionEventData_build.environment':'build.environment',
-        'payload_ACPExtensionEventData_xdm_application_name':'application/name',
+        'payload_ACPExtensionEventData_xdm_application_name':'application.name',
 
 
-        'payload_ACPExtensionEventData_xdm_eventType':'Event_Type',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageViews_value':'/web/webPageDetails/pageViews/value' ,
-         'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'/web/webInteraction/linkClicks/value',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_name': '/web/webInteraction/name',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'/web/webInteraction/type',
-        'topThingsChoice': '/productListItems/0/_merchVars/topThingsChoice',
-        'otherOptions': '/productListItems/0/_merchVars/otherOptions',
-        'includedSides': '/productListItems/0/_merchVars/includedSides',
-        'drinks':'/productListItems/0/_merchVars/drinks',
-        'riceChoice':'/productListItems/0/_merchVars/riceChoice',
-        'beansChoice':'/productListItems/0/_merchVars/beansChoice',
-        'productName':'/productListItems/0/_merchVars/productName',
-        'proteinChoice':'/productListItems/0/_merchVars/proteinChoice',
-        'SKU':'/productListItems/0/_merchVars/SKU',
-        'name':'/productListItems/0/_merchVars/name',
-        'quantity':'/productListItems/0/_merchVars/quantity',
-        'priceTotal':'/productListItems/0/_merchVars/priceTotal',
-        'payload_ACPExtensionEventData_xdm_commerce_productListAdds_value':'/commerce/productListAdds/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListOpens_value':'/commerce/productListOpens/value',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_subPageName':'/web/webPageDetails/subPageName',
-        'payload_ACPExtensionEventData_xdm_shoppingCart_cartEdits_value':'/shoppingCart/cartEdits/value',
-        'payload_ACPExtensionEventData_xdm_commerce_checkouts_value': '/commerce/checkouts/value',
+        'payload_ACPExtensionEventData_xdm_eventType':'Event.Type',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageViews_value':'web.webPageDetails.pageViews.value' ,
+         'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'web.webInteraction.linkClicks.value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_name': 'web.webInteraction.name',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'web.webInteraction.type',
+        'topThingsChoice': 'productListItems0.merchVars.topThingsChoice',
+        'otherOptions': 'productListItems0.merchVars.otherOptions',
+        'includedSides': 'productListItems0.merchVars.includedSides',
+        'drinks':'productListItems0.merchVars.drinks',
+        'riceChoice':'productListItems0.merchVars.riceChoice',
+        'beansChoice':'productListItems0.merchVars.beansChoice',
+        'productName':'productListItems0.merchVars.productName',
+        'proteinChoice':'productListItems0.merchVars.proteinChoice',
+        'SKU':'productListItems0.merchVars.SKU',
+        'name':'productListItems0.merchVars.name',
+        'quantity':'productListItems0.merchVars.quantity',
+        'priceTotal':'productListItems0.merchVars.priceTotal',
+        'payload_ACPExtensionEventData_xdm_commerce_productListAdds_value':'commerce.productListAdds.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListOpens_value':'commerce.productListOpens.value',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_subPageName':'web.webPageDetails.subPageName',
+        'payload_ACPExtensionEventData_xdm_shoppingCart_cartEdits_value':'shoppingCart.cartEdits.value',
+        'payload_ACPExtensionEventData_xdm_commerce_checkouts_value': 'commerce.checkouts.value',
         'payload_ACPExtensionEventData_xdm_commerce_checkoutFunnelInteractions_value':'checkoutFunnelInteractions',
-        'payload_ACPExtensionEventData_xdm_commerce_funnelName': '/commerce/funnelName',
-    'payload_ACPExtensionEventData_xdm_commerce_retrievalType':'/commerce/retrievalType',
-    'payload_ACPExtensionEventData_xdm_commerce_purchases_value': '/commerce/purchases/value',
-    'payload_ACPExtensionEventData_xdm_commerce_order_purchaseID': '/commerce/order/purchaseID',
-    'payload_ACPExtensionEventData_xdm_commerce_order_taxRevenue':'/commerce/order/taxRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_feeRevenue':'/commerce/order/feeRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_donationRevenue':'/commerce/order/donationRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_groupOrderParticipants':'/commerce/order/groupOrderParticipants',
-    'payload_ACPExtensionEventData_xdm_commerce_order_paymentMethod':'/commerce/order/paymentMethod',
+        'payload_ACPExtensionEventData_xdm_commerce_funnelName': 'commerce.funnelName',
+    'payload_ACPExtensionEventData_xdm_commerce_retrievalType':'commerce.retrievalType',
+    'payload_ACPExtensionEventData_xdm_commerce_purchases_value': 'commerce.purchases.value',
+    'payload_ACPExtensionEventData_xdm_commerce_order_purchaseID': 'commerce.order.purchaseID',
+    'payload_ACPExtensionEventData_xdm_commerce_order_taxRevenue':'commerce.order.taxRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_feeRevenue':'commerce.order.feeRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_donationRevenue':'commerce.order.donationRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_groupOrderParticipants':'commerce.order.groupOrderParticipants',
+    'payload_ACPExtensionEventData_xdm_commerce_order_paymentMethod':'commerce.order.paymentMethod',
     #'payload_currency-code':'/commerce/order/currencyCode',
-    'payload_ACPExtensionEventData_xdm_commerce_order_pickupTime':'/commerce/order/pickupTime',
-    'payload_ACPExtensionEventData_xdm_commerce_checkoutType': '/commerce/checkoutType'
+    'payload_ACPExtensionEventData_xdm_commerce_order_pickupTime':'commerce.order.pickupTime',
+    'payload_ACPExtensionEventData_xdm_commerce_checkoutType': 'commerce.checkoutType'
 
     },inplace=True)
     
@@ -342,22 +354,24 @@ else:
     n=json_Data[json_Data.duplicated()]
     #st.write(n.index)
     for i in n.index:
-        json_Data.loc[i,'KILL(its redundant or not needed)']='Duplicate'
-
+        json_Data.loc[i,'Notes']='Duplicate'
+    json_Data['Server Hits']=json_Data.index
     #st.dataframe(n)
     #st.dataframe(json_Data)
     json_Data = json_Data.T
-    
+    #json_Data.columns = json_Data.iloc[0]
+    #json_Data = json_Data.reindex(json_Data.index.drop(0)).reset_index(drop=True)
+    #json_Data.columns.name = None
     st.write("Filename: ", data_file.name)
-    st.write("output file name",str(data_file.name)[:-5]+"_output.csv")
+    st.write("output file name",str(data_file.name)[:-5]+"_Output.csv")
     #st.write(os.sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'HasOffers_POSTCalls')))
-    output = str(data_file.name)[:-5]+"_output.csv"
+    output = str(data_file.name)[:-5]+"_Output.csv"
     #csv= .to_csv(output)
 
 
     def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv().encode('utf-8')
+        return df.to_csv(header=0).encode('utf-8')
 
 
     csv = convert_df(json_Data)
@@ -503,24 +517,27 @@ else:
     #st.dataframe(json_Data) 
     #st.write(type(json_Data['index'].iloc[3]))
     json_Data.sort_values('timestamp',inplace=True)
+    json_Data['timestamp'] = pd.to_datetime(json_Data['timestamp'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('US/Pacific')
     #st.dataframe(json_Data)
     #json_Data['timestamp'] = json_Data['timestamp'].apply(lambda x: datetime.datetime.fromtimestamp(int(str(x[0:10]))).isoformat())
-    json_Data['Date']=json_Data['payload_ACPExtensionEventData_xdm_timestamp'].apply(lambda x:str(x)[:10])
-    json_Data['Time']=json_Data['payload_ACPExtensionEventData_xdm_timestamp'].apply(lambda x:str(x)[12:-4])
+    json_Data['Date']=json_Data['timestamp'].apply(lambda x:str(x)[:10])
+    json_Data['Time/PST']=json_Data['timestamp'].apply(lambda x:str(x)[11:19])
+    json_Data['Time/PST']=json_Data['Time/PST'].apply(lambda x: datetime.strptime(x, "%H:%M:%S").strftime("%I:%M :%S %p"))
+    #st.dataframe(json_Data)
     json_Data=json_Data.replace('nan', '')
     json_Data.reset_index(inplace=True,drop=True)
     json_Data.index = np.arange(1, len(json_Data) + 1)
-    json_Data['Column Name']=json_Data.index
+    
     #st.write(len(json_Data.columns))
     #st.write(len(set(json_Data.columns)))
     
     #st.dataframe(json_Data)
-    json_Data=json_Data.reindex(columns=['Consolidate with previous or Next Event',
+    json_Data=json_Data.reindex(columns=['Server Hits','Consolidate with previous or Next Event',
     'KILL(its redundant or not needed)',
     'Whats this? "Special effect or missing event name "',
     'Notes',
     'Date',
-    'Time',
+    'Time/PST',
     'payload_ACPExtensionEventData_xdm_eventType',
     'payload_ACPExtensionEventData_xdm_web_webPageDetails_name',
     'payload_ACPExtensionEventData_xdm_web_pageViews_value',
@@ -579,76 +596,77 @@ else:
     '_internal_adb_props.label'
     ])
     json_Data.rename(columns={
-        'payload_ACPExtensionEventData_xdm_web_pageViews_value':'web/pageViews/value',
-        'payload_ACPExtensionEventData_xdm_web_menuPageViews_value':'web/MenuPageViews/Value',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection1':'web/PageDetails/subSection1',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection2':'web/PageDetails/subSection2',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_page':'/web/webPageDetails/page',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageName': '/web/webPageDetails/subPageName',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageViews_value':'/web/webPageDetails/subPageViews/Value',
-        'payload_ACPExtensionEventData_xdm_web_webReferrer_URL':'/web/webReferrer/URL',
-        'payload_ACPExtensionEventData_xdm_web_siteRegion':'web/siteRegion',
-        'payload_ACPExtensionEventData_xdm_web_language':'web/Language',
-        'payload_ACPExtensionEventData_xdm_web_URL':'web/URL',
-        'payload_ACPExtensionEventData_xdm_web_pageType':'web/PageType',
-        'payload_ACPExtensionEventData_xdm_web_siteSection':'web/Sitesection',
-        'payload_ACPExtensionEventData_xdm_web_name':'web/name',
-        'payload_ACPExtensionEventData_xdm_web_subSection1':'web/subsection1',
-        'payload_ACPExtensionEventData_xdm_web_subSection2': 'web/subsection2',
-        'payload_ACPExtensionEventData_xdm_web_page':'web/page',
-        'payload_ACPExtensionEventData_xdm_web_subPageName' :'web/subPageName',
-        'payload_ACPExtensionEventData_xdm_web_subPageViews_value': 'web/subPageView',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkModuleName':'web/webInteraction/linkModuleName',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_name':'web/WebInteraction/name',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'web/webInteraction/type',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaClicks_value':'ctaClicks/value',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'LinkClick/value',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'webinteraction/type',
-        'payload_ACPExtensionEventData_xdm__chipotle_loginStatus': '_chipotle/loginStatus',
-        'payload_ACPExtensionEventData_xdm__chipotle_devicePlatform':'_chipotle/devicePlatform',
-        'payload_ACPExtensionEventData_xdm__chipotle_orderNowClicks_value': '_chipotle/orderNowClick/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_errors_value':'_chipotle/errors/Value',
-        'payload_ACPExtensionEventData_xdm__chipotle_errorName':'_chipotle/ErrorName',
-        'payload_ACPExtensionEventData_xdm__chipotle_storeId':'_chipotle/storeID',
-        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressSubmitted_value':'_chipotle/deliveryAddressSubmitted/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_formNameDetails':'_chipotle/formNameDetails',
-        'payload_ACPExtensionEventData_xdm__chipotle_loginType':'_chipotle/loginType',
-        'payload_ACPExtensionEventData_xdm__chipotle_accountInteraction_value':'_chipotle/accountInteraction/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_registrationType':'_chipotle/registrationType',
-        'payload_ACPExtensionEventData_xdm__chipotle_interactionName':'_chipotle/interactionName',
-        'payload_ACPExtensionEventData_xdm__chipotle_addAddressDetails_value':'_chipotle/addAddressDetails/values',
-        'payload_ACPExtensionEventData_xdm__chipotle_geoSearched':'_chipotle/geoSearched',
-        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressLookup_value':'_chipotle/deliveryAddresslookup/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_searchType':'_chipotle/searchType',
-        'payload_ACPExtensionEventData_xdm__chipotle_cartEdits_value':'_chipotle/cardEdits/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_mealNameGiven_value':'_chipotle/mealNameGiven/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplications_value':'_chipotle/orderDupications/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplicates_value':'_chipotle/orderDuplicates/value',
-        'payload_ACPExtensionEventData_xdm__chipotle_availablePoints':'_chipotle/avaiblePoints',
-        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar60':'eVars/evar60',
-        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar47':'evars/evar47',
-        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar9':'evars/eVar9',
+        'Time/PST':'Time(PST Timezone)',
+        'payload_ACPExtensionEventData_xdm_web_pageViews_value':'web.pageViews.value',
+        'payload_ACPExtensionEventData_xdm_web_menuPageViews_value':'web.MenuPageViews.Value',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection1':'web.PageDetails.subSection1',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subSection2':'web.PageDetails.subSection2',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_page':'web.webPageDetails.page',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageName': 'web.webPageDetails.subPageName',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_subPageViews_value':'web.webPageDetails.subPageViews.Value',
+        'payload_ACPExtensionEventData_xdm_web_webReferrer_URL':'web.webReferrer.URL',
+        'payload_ACPExtensionEventData_xdm_web_siteRegion':'web.siteRegion',
+        'payload_ACPExtensionEventData_xdm_web_language':'web.Language',
+        'payload_ACPExtensionEventData_xdm_web_URL':'web.URL',
+        'payload_ACPExtensionEventData_xdm_web_pageType':'web.PageType',
+        'payload_ACPExtensionEventData_xdm_web_siteSection':'web.Sitesection',
+        'payload_ACPExtensionEventData_xdm_web_name':'web.name',
+        'payload_ACPExtensionEventData_xdm_web_subSection1':'web.subsection1',
+        'payload_ACPExtensionEventData_xdm_web_subSection2': 'web.subsection2',
+        'payload_ACPExtensionEventData_xdm_web_page':'web.page',
+        'payload_ACPExtensionEventData_xdm_web_subPageName' :'web.subPageName',
+        'payload_ACPExtensionEventData_xdm_web_subPageViews_value': 'web.subPageView',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkModuleName':'web.webInteraction.linkModuleName',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_name':'web.WebInteraction.name',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'web.webInteraction.type',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaClicks_value':'ctaClicks.value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'LinkClick.value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'webinteraction.type',
+        'payload_ACPExtensionEventData_xdm__chipotle_loginStatus': '_chipotle.loginStatus',
+        'payload_ACPExtensionEventData_xdm__chipotle_devicePlatform':'_chipotle.devicePlatform',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderNowClicks_value': '_chipotle.orderNowClick.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_errors_value':'_chipotle.errors.Value',
+        'payload_ACPExtensionEventData_xdm__chipotle_errorName':'_chipotle.ErrorName',
+        'payload_ACPExtensionEventData_xdm__chipotle_storeId':'_chipotle.storeID',
+        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressSubmitted_value':'_chipotle.deliveryAddressSubmitted.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_formNameDetails':'_chipotle.formNameDetails',
+        'payload_ACPExtensionEventData_xdm__chipotle_loginType':'_chipotle.loginType',
+        'payload_ACPExtensionEventData_xdm__chipotle_accountInteraction_value':'_chipotle.accountInteraction.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_registrationType':'_chipotle.registrationType',
+        'payload_ACPExtensionEventData_xdm__chipotle_interactionName':'_chipotle.interactionName',
+        'payload_ACPExtensionEventData_xdm__chipotle_addAddressDetails_value':'_chipotle.addAddressDetails.values',
+        'payload_ACPExtensionEventData_xdm__chipotle_geoSearched':'_chipotle.geoSearched',
+        'payload_ACPExtensionEventData_xdm__chipotle_deliveryAddressLookup_value':'_chipotle.deliveryAddresslookup.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_searchType':'_chipotle.searchType',
+        'payload_ACPExtensionEventData_xdm__chipotle_cartEdits_value':'_chipotle.cardEdits.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_mealNameGiven_value':'_chipotle.mealNameGiven.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplications_value':'_chipotle.orderDupications.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_orderDuplicates_value':'_chipotle.orderDuplicates.value',
+        'payload_ACPExtensionEventData_xdm__chipotle_availablePoints':'_chipotle.avaiblePoints',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar60':'eVars.evar60',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar47':'evars.evar47',
+        'payload_ACPExtensionEventData_xdm__experience_analytics_customDimensions_eVars_eVar9':'evars.eVar9',
         'payload_ACPExtensionEventData_xdm_marketing_internalCampaign':'marketing_internalCampain',
-        'payload_ACPExtensionEventData_xdm_marketing_internalCampaignClicks_value':'internalCampainClicks/Value',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaNameType':'webinteraction/ctaNameType',
+        'payload_ACPExtensionEventData_xdm_marketing_internalCampaignClicks_value':'internalCampainClicks.Value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_webInteraction_ctaNameType':'webinteraction.ctaNameType',
 
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteRegion':'/web/webPageDetails/siteRegion',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language': '/web/webPageDetails/Language',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageType' : '/web/webPageDetails/pageType',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteSection':'/web/webPageDetails/siteSection',
-        'payload_ACPExtensionEventData_xdm_web_webPageDetails_name': '/web/webPageDetails/name',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteRegion':'web.webPageDetails.siteRegion',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_language': 'web.webPageDetails.Language',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageType' : '.web.webPageDetails.pageType',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_siteSection':'web.webPageDetails.siteSection',
+        'payload_ACPExtensionEventData_xdm_web_webPageDetails_name': 'web.webPageDetails.name',
         #'web.webPageDetails.pageViews': 
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_previousPage':'mobile/mobilePageDetails/previousPage',
-        'payload_ACPExtensionEventData_xdm_user_devicePlatform':'user/devicePlatform',
-        'payload_ACPExtensionEventData_xdm_crewTipCount_value': "crewTipCount_value",
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_previousPage':'mobile.mobilePageDetails.previousPage',
+        'payload_ACPExtensionEventData_xdm_user_devicePlatform':'user.devicePlatform',
+        'payload_ACPExtensionEventData_xdm_crewTipCount_value': "crewTipCount.value",
         #'payload_ACPExtensionEventData_xdm_crewTipCount_value',
-        'payload_ACPExtensionEventData_xdm_commerce_order_orderID' :'commerce/order/orderID',
-        'payload_ACPExtensionEventData_xdm_commerce_order_driverTipRevenue':'commerce/order/driverTipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_order_crewTipRevenue':'commerce/order/crewTipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_order_tipRevenue':'commerce/order/tipRevenue',
-        'payload_ACPExtensionEventData_xdm_commerce_selectLocation_value':'commerce/selectLocation/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListViews_value':'commerce/productListViews/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListRemovals_value':'commerce/productListRemovals/value',
+        'payload_ACPExtensionEventData_xdm_commerce_order_orderID' :'commerce.order.orderID',
+        'payload_ACPExtensionEventData_xdm_commerce_order_driverTipRevenue':'commerce.order.driverTipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_order_crewTipRevenue':'commerce.order.crewTipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_order_tipRevenue':'commerce.order.tipRevenue',
+        'payload_ACPExtensionEventData_xdm_commerce_selectLocation_value':'commerce.selectLocation.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListViews_value':'commerce.productListViews.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListRemovals_value':'commerce.productListRemovals.value',
         'payload_ACPExtensionEventData_xdm_isDelivery':'isDelivery',
         'payload_ACPExtensionEventData_xdm_storeLocator_storeID':'storeLocator_storeID',
         'payload_ACPExtensionEventData_xdm_storeLocator_pickupLocation_value':'storeLocator_pickupLocation_value',
@@ -656,44 +674,44 @@ else:
         'payload_ACPExtensionEventData_xdm_storeLocator_locationSelected_value':'storeLocator_locationSelected_value',
         'payload_ACPExtensionEventData_xdm_storeLocator_searchInitiated_value':'storeLocator_searchInitiated_value',
         'payload_ACPExtensionEventData_build.environment':'build.environment',
-        'payload_ACPExtensionEventData_xdm_application_name':'application/name',
+        'payload_ACPExtensionEventData_xdm_application_name':'application.name',
 
 
-        'payload_ACPExtensionEventData_xdm_eventType':'Event_Type',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageViews_value':'/web/webPageDetails/pageViews/value' ,
-         'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'/web/webInteraction/linkClicks/value',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_name': '/web/webInteraction/name',
-        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'/web/webInteraction/type',
-        'topThingsChoice': '/productListItems/0/_merchVars/topThingsChoice',
-        'otherOptions': '/productListItems/0/_merchVars/otherOptions',
-        'includedSides': '/productListItems/0/_merchVars/includedSides',
-        'drinks':'/productListItems/0/_merchVars/drinks',
-        'riceChoice':'/productListItems/0/_merchVars/riceChoice',
-        'beansChoice':'/productListItems/0/_merchVars/beansChoice',
-        'productName':'/productListItems/0/_merchVars/productName',
-        'proteinChoice':'/productListItems/0/_merchVars/proteinChoice',
-        'SKU':'/productListItems/0/_merchVars/SKU',
-        'name':'/productListItems/0/_merchVars/name',
-        'quantity':'/productListItems/0/_merchVars/quantity',
-        'priceTotal':'/productListItems/0/_merchVars/priceTotal',
-        'payload_ACPExtensionEventData_xdm_commerce_productListAdds_value':'/commerce/productListAdds/value',
-        'payload_ACPExtensionEventData_xdm_commerce_productListOpens_value':'/commerce/productListOpens/value',
-        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_subPageName':'/web/webPageDetails/subPageName',
-        'payload_ACPExtensionEventData_xdm_shoppingCart_cartEdits_value':'/shoppingCart/cartEdits/value',
-        'payload_ACPExtensionEventData_xdm_commerce_checkouts_value': '/commerce/checkouts/value',
+        'payload_ACPExtensionEventData_xdm_eventType':'EventType',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_pageViews_value':'web.webPageDetails.pageViews.value' ,
+         'payload_ACPExtensionEventData_xdm_web_webInteraction_linkClicks_value':'web.webInteraction.linkClicks.value',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_name': 'web.webInteraction.name',
+        'payload_ACPExtensionEventData_xdm_web_webInteraction_type':'web.webInteraction.type',
+        'topThingsChoice': 'productListItems0.merchVars.topThingsChoice',
+        'otherOptions': 'productListItems0.merchVars.otherOptions',
+        'includedSides': 'productListItems0.merchVars.includedSides',
+        'drinks':'productListItems0.merchVars.drinks',
+        'riceChoice':'productListItems0.merchVars.riceChoice',
+        'beansChoice':'productListItems0.merchVars.beansChoice',
+        'productName':'productListItems0.merchVars.productName',
+        'proteinChoice':'productListItems0.merchVars.proteinChoice',
+        'SKU':'productListItems0.merchVars.SKU',
+        'name':'productListItems0.merchVars.name',
+        'quantity':'productListItems0.merchVars.quantity',
+        'priceTotal':'productListItems0.merchVars.priceTotal',
+        'payload_ACPExtensionEventData_xdm_commerce_productListAdds_value':'commerce.productListAdds.value',
+        'payload_ACPExtensionEventData_xdm_commerce_productListOpens_value':'commerce.productListOpens.value',
+        'payload_ACPExtensionEventData_xdm_mobile_mobilePageDetails_subPageName':'web.webPageDetails.subPageName',
+        'payload_ACPExtensionEventData_xdm_shoppingCart_cartEdits_value':'shoppingCart.cartEdits.value',
+        'payload_ACPExtensionEventData_xdm_commerce_checkouts_value': 'commerce.checkouts.value',
         'payload_ACPExtensionEventData_xdm_commerce_checkoutFunnelInteractions_value':'checkoutFunnelInteractions',
-        'payload_ACPExtensionEventData_xdm_commerce_funnelName': '/commerce/funnelName',
-    'payload_ACPExtensionEventData_xdm_commerce_retrievalType':'/commerce/retrievalType',
-    'payload_ACPExtensionEventData_xdm_commerce_purchases_value': '/commerce/purchases/value',
-    'payload_ACPExtensionEventData_xdm_commerce_order_purchaseID': '/commerce/order/purchaseID',
-    'payload_ACPExtensionEventData_xdm_commerce_order_taxRevenue':'/commerce/order/taxRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_feeRevenue':'/commerce/order/feeRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_donationRevenue':'/commerce/order/donationRevenue',
-    'payload_ACPExtensionEventData_xdm_commerce_order_groupOrderParticipants':'/commerce/order/groupOrderParticipants',
-    'payload_ACPExtensionEventData_xdm_commerce_order_paymentMethod':'/commerce/order/paymentMethod',
+        'payload_ACPExtensionEventData_xdm_commerce_funnelName': 'commerce.funnelName',
+    'payload_ACPExtensionEventData_xdm_commerce_retrievalType':'commerce.retrievalType',
+    'payload_ACPExtensionEventData_xdm_commerce_purchases_value': 'commerce.purchases.value',
+    'payload_ACPExtensionEventData_xdm_commerce_order_purchaseID': 'commerce.order.purchaseID',
+    'payload_ACPExtensionEventData_xdm_commerce_order_taxRevenue':'commerce.order.taxRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_feeRevenue':'commerce.order.feeRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_donationRevenue':'commerce.order.donationRevenue',
+    'payload_ACPExtensionEventData_xdm_commerce_order_groupOrderParticipants':'commerce.order.groupOrderParticipants',
+    'payload_ACPExtensionEventData_xdm_commerce_order_paymentMethod':'commerce.order.paymentMethod',
     #'payload_currency-code':'/commerce/order/currencyCode',
-    'payload_ACPExtensionEventData_xdm_commerce_order_pickupTime':'/commerce/order/pickupTime',
-    'payload_ACPExtensionEventData_xdm_commerce_checkoutType': '/commerce/checkoutType'
+    'payload_ACPExtensionEventData_xdm_commerce_order_pickupTime':'commerce.order.pickupTime',
+    'payload_ACPExtensionEventData_xdm_commerce_checkoutType': 'commerce.checkoutType'
 
     },inplace=True)
     
@@ -707,21 +725,22 @@ else:
     n=json_Data[json_Data.duplicated()]
     #st.write(n.index)
     for i in n.index:
-        json_Data.loc[i,'KILL(its redundant or not needed)']='Duplicate'
+        json_Data.loc[i,'Notes']='Duplicate'
 
+    json_Data['Server Hits']=json_Data.index
     #st.dataframe(json_Data)
     json_Data = json_Data.T
     
     st.write("Filename: ", web_file.name)
-    st.write("output file name",str(web_file.name)[:-5]+"_output.csv")
+    st.write("output file name",str(web_file.name)[:-5]+"_Output.csv")
     #st.write(os.sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'HasOffers_POSTCalls')))
-    output = str(web_file.name)[:-5]+"_output.csv"
+    output = str(web_file.name)[:-5]+"_Output.csv"
     #csv= .to_csv(output)
 
 
     def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv().encode('utf-8')
+        return df.to_csv(header=0).encode('utf-8')
 
 
     csv = convert_df(json_Data)
