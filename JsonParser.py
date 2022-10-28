@@ -865,7 +865,7 @@ else:
     #st.write('kill',json_Data.loc[4,'Web'])
     #st.dataframe(json_Data)
     d=json_Data['Date'].iloc[0]
-    st.write(d)
+    #st.write(d)
     json_Data = json_Data.T
     json_Data=json_Data.reset_index()
     #json_Data=json_Data.style.apply(style_specific_cell, axis=None)
