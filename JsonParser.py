@@ -2,12 +2,15 @@
 from re import I
 from numpy import NAN, NaN
 import numpy as np
+from pyparsing import java_style_comment
 import streamlit as st
 import json
 import pandas as pd
 import os
+import xlsxwriter
 import pytz
-
+from io import BytesIO
+from UliPlot.XLSX import auto_adjust_xlsx_column_width
 from datetime import datetime
 t='<h2 style= color:Red; font-size: 10px;">For IOS And Android upload Json below</h2>'
 #from streamlit.proto.Json_pb2 import Json
@@ -49,6 +52,25 @@ def flatten_json(nested_json, exclude=['']):
 
     flatten(nested_json)
     return out
+
+def style_specific_cell(x):
+    df = x.copy()
+    color = 'background-color:#FFF974'
+    df1 = pd.DataFrame('', index=x.index, columns=x.columns)
+    df1.iloc[0,2] = color
+    df1.iloc[0,4]=color
+    df1.iloc[0,6]=color
+    df1.iloc[0,8]=color
+    for i in range(1,df.shape[0]-1):
+        for j in range(1,df.shape[1]-1):
+            if df.loc[i,j]=="Kill (duplicate)" :
+                df1.loc[i,j]='background-color: #FFCCCB'
+            elif df.loc[i,j]=="Kill (Don't track)":
+                df1.loc[i,j]='background-color: #FFCCCB'
+            elif df.loc[i,j]=='Consolidate':
+                df1.loc[i,j]='background-color: lightorange'
+    
+    return df1    
 
 def flatten_nested_json_df(df):
         #df = df.reset_index()
@@ -222,10 +244,10 @@ else:
     
     
     #st.dataframe(json_Data)
-    json_Data=json_Data.reindex(columns=['Server Hits','Consolidate with previous or Next Event',
-    'KILL(its redundant or not needed)',
-    'Whats this? "Special effect or missing event name "',
-    'Notes',
+    json_Data=json_Data.reindex(columns=['Web','Reviewed with Devs?','User Story #',
+    'Kill or Consolidate?',
+    'Recommendation',
+    'Notes','Server Hits',
     'Date',
     'Time/PST',
     'payload_ACPExtensionEventData_xdm_eventType',
@@ -356,30 +378,126 @@ else:
     for i in n.index:
         json_Data.loc[i,'Notes']='Duplicate'
     json_Data['Server Hits']=json_Data.index
+    json_Data.loc[1,'Web']= '# of server calls found:'
+    #json_Data.loc[2,'Web']= json_Data.index.shape
+    json_Data.loc[3,'Web']= ' # we can Kill or Consolidate:'
+    #json_Data.loc[4,'Web']= json_Data['Kill or Consolidate?'].sum()
+    json_Data.loc[5,'Web']= '# that are Valid or for Discusson:'
+    #json_Data.loc[6,'Web']= json_Data.index.shape-json_Data['Kill or Consolidate?'].sum()
+    json_Data.loc[7,'Web']= '% possible reduction:'
+    #json_Data.loc[8,'Web']= str(1-(json_Data.loc[6,'Web']/json_Data.index.shape))[1:7]+"%"
     #st.dataframe(n)
     #st.dataframe(json_Data)
     json_Data = json_Data.T
+    json_Data=json_Data.reset_index()
     #json_Data.columns = json_Data.iloc[0]
     #json_Data = json_Data.reindex(json_Data.index.drop(0)).reset_index(drop=True)
     #json_Data.columns.name = None
     st.write("Filename: ", data_file.name)
     st.write("output file name",str(data_file.name)[:-5]+"_Output.csv")
     #st.write(os.sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'HasOffers_POSTCalls')))
-    output = str(data_file.name)[:-5]+"_Output.csv"
+    output = str(data_file.name)[:-5]+"_Output.xlsx"
     #csv= .to_csv(output)
+    hit_count=json_Data.shape[1]
+    output1 = BytesIO()
+    with pd.ExcelWriter(output1, engine='xlsxwriter') as writer:
+        format_r = writer.book.add_format({'bg_color':   '#FFF974',
+                          'font_color': 'black',
+                          'font_name':'Arial Black',
+                          'bold':'True'})
+        format_n = writer.book.add_format({'bg_color':   '#FFCCCB',
+                          'font_color': 'black',
+                          'bold':'True'})
+        format_k= writer.book.add_format({
+                          'font_color': 'black',
+                          'font_name':'Arial Black',
+                          'font_size':'11',
+                          'bold':'True'})
+        format_c= writer.book.add_format({
+                           'bg_color':   '#FFCCCB',
+                          'font_color': 'red',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_g= writer.book.add_format({
+                           'bg_color':   '#90EE90',
+                          'font_color': 'green',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_o= writer.book.add_format({
+                           'bg_color':   '#FFD580',
+                          'font_color': 'orange',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_co= writer.book.add_format({
+                           'bg_color':   '#FFF974',
+                          'font_color': 'black',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+    # Write each dataframe to a different worksheet.
+        json_Data.to_excel(writer,header=0,index=0,sheet_name='Sheet1')
+        for column in json_Data:
+            column_width = max(json_Data[column].astype(str).map(len).max(), len(str(column)))
+            col_idx = json_Data.columns.get_loc(column)
+            #st.write(col_idx)
+            writer.sheets['Sheet1'].set_column(col_idx, col_idx, column_width)
+        worksheet=writer.sheets['Sheet1']
+        worksheet.write('C1',hit_count,format_r)
+        from string import ascii_uppercase as alc
+        alc=alc[1:]
+        for i in alc:
+            worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
+            for j in alc:
+                worksheet.write_formula(i+j+str(4), '{IFERROR(FIND("kill",LOWER('+i+j+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+j+str(5)+')),0)}')
+                worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
+                worksheet.write_formula('G1','{=(C1-E1)}',format_r)
+                worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
+                worksheet.write('A1',str(data_file.name)[:-5],format_r)   
+        from xlsxwriter.utility import xl_rowcol_to_cell
+        worksheet.data_validation(4,1,4,hit_count, {'validate': 'list',
+                                  'source': ['Consolidate', 'Kill (Duplicate)', 'Kill (Conditionally)',"Kill (Don't track)",'OK','OK w/value bug','Discuss']})
+        worksheet.conditional_format('A1:A100', {'type': 'cell',
+                                    'criteria': 'not equal to',
+                                    'value':    1,
+                                    'format':   format_k})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Kill (Duplicate)"',
+                                    'format':   format_c})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Kill (Conditionally)"',
+                                    'format':   format_c})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '''"Kill (Don't track)"''',
+                                    'format':   format_c})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"OK"',
+                                    'format':   format_g})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"OK w/value bug"',
+                                    'format':   format_g})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Discuss"',
+                                    'format':   format_o})
+        worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Consolidate"',
+                                    'format':   format_co})
+        worksheet.freeze_panes(1, 1)
 
 
-    def convert_df(df):
-    # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv(header=0).encode('utf-8')
 
-
-    csv = convert_df(json_Data)
+    writer.save()
+    
     st.download_button(
         label="Download data as CSV",
-        data=csv,
+        data=output1,
         file_name= output,
-        mime='text/csv',
+       mime="application/vnd.ms-excel",
     )
 
 
@@ -532,10 +650,11 @@ else:
     #st.write(len(set(json_Data.columns)))
     
     #st.dataframe(json_Data)
-    json_Data=json_Data.reindex(columns=['Server Hits','Consolidate with previous or Next Event',
-    'KILL(its redundant or not needed)',
-    'Whats this? "Special effect or missing event name "',
+    json_Data=json_Data.reindex(columns=['Web','Reviewed with Devs?','User Story #',
+    'Kill or Consolidate?',
+    'Recommendation',
     'Notes',
+    'Server Hits',
     'Date',
     'Time/PST',
     'payload_ACPExtensionEventData_xdm_eventType',
@@ -726,27 +845,145 @@ else:
     #st.write(n.index)
     for i in n.index:
         json_Data.loc[i,'Notes']='Duplicate'
-
+    for i in range(1,json_Data.shape[0]):
+        if json_Data.loc[i,'Notes']=='Duplicate':
+            json_Data.loc[i,'Kill or Consolidate?']=1
+    #st.write(json_Data['Kill or Consolidate?'].sum())
     json_Data['Server Hits']=json_Data.index
+    json_Data.loc[1,'Web']= '# of server calls found:'
+    json_Data.loc[2,'Web']= json_Data.index.shape
+    json_Data.loc[3,'Web']= ' # we can Kill or Consolidate:'
+    json_Data.loc[4,'Web']= json_Data['Kill or Consolidate?'].sum()
+    json_Data.loc[5,'Web']= '# that are Valid or for Discusson:'
+    json_Data.loc[6,'Web']= json_Data.index.shape-json_Data['Kill or Consolidate?'].sum()
+    json_Data.loc[7,'Web']= '% possible reduction:'
+    json_Data.loc[8,'Web']= str(1-(json_Data.loc[6,'Web']/json_Data.index.shape))[1:7]+"%"
+    kill_or_consolidate=(json_Data['Kill or Consolidate?'].sum())
+    #st.write('kill',json_Data.loc[4,'Web'])
     #st.dataframe(json_Data)
+    d=json_Data['Date'].iloc[0]
+    st.write(d)
     json_Data = json_Data.T
-    
+    json_Data=json_Data.reset_index()
+    #json_Data=json_Data.style.apply(style_specific_cell, axis=None)
     st.write("Filename: ", web_file.name)
     st.write("output file name",str(web_file.name)[:-5]+"_Output.csv")
     #st.write(os.sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'HasOffers_POSTCalls')))
-    output = str(web_file.name)[:-5]+"_Output.csv"
+    output = str(web_file.name)[:-5]+"_Output.xlsx"
     #csv= .to_csv(output)
+    
+    hit_count=json_Data.shape[1]-1
+    valid =hit_count-kill_or_consolidate
+    perc= 1-(valid/hit_count)
+    output1 = BytesIO()
+    with pd.ExcelWriter(output1, engine='xlsxwriter') as writer:
+        format_r = writer.book.add_format({'bg_color':   '#FFF974',
+                          'font_color': 'black',
+                          'font_name':'Arial Black',
+                          'bold':'True'})
+        format_n = writer.book.add_format({'bg_color':   '#FFCCCB',
+                          'font_color': 'black',
+                          'bold':'True'})
+        format_k= writer.book.add_format({
+                          'font_color': 'black',
+                          'font_name':'Arial Black',
+                          'font_size':'11',
+                          'bold':'True'})
+        format_c= writer.book.add_format({
+                           'bg_color':   '#FFCCCB',
+                          'font_color': 'red',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_g= writer.book.add_format({
+                           'bg_color':   '#90EE90',
+                          'font_color': 'green',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_o= writer.book.add_format({
+                           'bg_color':   '#FFD580',
+                          'font_color': 'orange',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+        format_co= writer.book.add_format({
+                           'bg_color':   '#FFF974',
+                          'font_color': 'black',
+                          'font_name':'Arial',
+                          'font_size':'9'})
+    # Write each dataframe to a different worksheet.
+        json_Data.to_excel(writer,header=0,index=0,sheet_name='Sheet1')
+        for column in json_Data:
+            column_width = max(json_Data[column].astype(str).map(len).max(), len(str(column)))
+            col_idx = json_Data.columns.get_loc(column)
+            #st.write(col_idx)
+            writer.sheets['Sheet1'].set_column(col_idx, col_idx, column_width)
+            worksheet=writer.sheets['Sheet1']
+            worksheet.write('C1',hit_count,format_r)
+            worksheet.write('E1',kill_or_consolidate,format_r)
+            worksheet.write('G1',valid,format_r)
+            worksheet.write('I1',perc,format_r)
+            worksheet.write('A1',web_file.name,format_r)
+            from string import ascii_uppercase as alc
+            alc=alc[1:]
+            for i in alc:
+                worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
+                for j in alc:
+                    worksheet.write_formula(i+j+str(4), '{IFERROR(FIND("kill",LOWER('+i+j+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+j+str(5)+')),0)}')
+            worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
+            worksheet.write_formula('G1','{=(C1-E1)}',format_r)
+            worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
+
+            from xlsxwriter.utility import xl_rowcol_to_cell
+            worksheet.data_validation(4,1,4,hit_count, {'validate': 'list',
+                                  'source': ['Consolidate', 'Kill (Duplicate)', 'Kill (Conditionally)',"Kill (Don't track)",'OK','OK w/value bug','Discuss']})
+            worksheet.conditional_format('A1:A100', {'type': 'cell',
+                                    'criteria': 'not equal to',
+                                    'value':    1,
+                                    'format':   format_k})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Kill (Duplicate)"',
+                                    'format':   format_c})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Kill (Conditionally)"',
+                                    'format':   format_c})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '''"Kill (Don't track)"''',
+                                    'format':   format_c})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"OK"',
+                                    'format':   format_g})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"OK w/value bug"',
+                                    'format':   format_g})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Discuss"',
+                                    'format':   format_o})
+            worksheet.conditional_format('B5:ZZ5', {'type': 'cell',
+                                    'criteria': 'equal to',
+                                    'value':    '"Consolidate"',
+                                    'format':   format_co})
+            worksheet.freeze_panes(1, 1)
 
 
-    def convert_df(df):
-    # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv(header=0).encode('utf-8')
 
+    writer.save()
 
-    csv = convert_df(json_Data)
+   
+
+    # Close the Pandas Excel writer and output the Excel file to the buffer
+    
+    #csv = convert_df(json_Data)
+    
+    
     st.download_button(
         label="Download data as CSV",
-        data=csv,
+        data=output1,
         file_name= output,
-        mime='text/csv',
-    )   
+        mime="application/vnd.ms-excel"
+    ) 
+    
