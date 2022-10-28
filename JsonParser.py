@@ -444,9 +444,9 @@ else:
         worksheet.write('C1',hit_count,format_r)
         from string import ascii_uppercase as alc
         n=alc
-        st.write(n,alc)
+        #st.write(n,alc)
         alc=alc[1:]
-        st.write(n,alc)
+        #st.write(n,alc)
         for i in alc:
             worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
             for j in n:
