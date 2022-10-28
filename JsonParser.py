@@ -10,7 +10,7 @@ import os
 import xlsxwriter
 import pytz
 from io import BytesIO
-
+from UliPlot.XLSX import auto_adjust_xlsx_column_width
 from datetime import datetime
 t='<h2 style= color:Red; font-size: 10px;">For IOS And Android upload Json below</h2>'
 #from streamlit.proto.Json_pb2 import Json
@@ -443,10 +443,13 @@ else:
         worksheet=writer.sheets['Sheet1']
         worksheet.write('C1',hit_count,format_r)
         from string import ascii_uppercase as alc
+        n=alc
+        st.write(n,alc)
         alc=alc[1:]
+        st.write(n,alc)
         for i in alc:
             worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
-            for j in alc:
+            for j in n:
                 worksheet.write_formula(i+j+str(4), '{IFERROR(FIND("kill",LOWER('+i+j+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+j+str(5)+')),0)}')
                 worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
                 worksheet.write_formula('G1','{=(C1-E1)}',format_r)
@@ -923,11 +926,12 @@ else:
             worksheet.write('I1',perc,format_r)
             worksheet.write('A1',web_file.name,format_r)
             from string import ascii_uppercase as alc
+            n=alc
             alc=alc[1:]
             for i in alc:
                 worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
-                for j in alc:
-                    worksheet.write_formula(i+j+str(4), '{IFERROR(FIND("kill",LOWER('+i+j+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+j+str(5)+')),0)}')
+                for j in n:
+                    worksheet.write_formula(j+i+str(4), '{IFERROR(FIND("kill",LOWER('+j+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+j+i+str(5)+')),0)}')
             worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
             worksheet.write_formula('G1','{=(C1-E1)}',format_r)
             worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
