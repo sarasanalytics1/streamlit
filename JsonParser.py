@@ -10,7 +10,7 @@ import os
 import xlsxwriter
 import pytz
 from io import BytesIO
-from UliPlot.XLSX import auto_adjust_xlsx_column_width
+
 from datetime import datetime
 t='<h2 style= color:Red; font-size: 10px;">For IOS And Android upload Json below</h2>'
 #from streamlit.proto.Json_pb2 import Json
