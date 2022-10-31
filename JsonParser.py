@@ -444,17 +444,16 @@ else:
         worksheet.write('C1',hit_count,format_r)
         from string import ascii_uppercase as alc
         n=alc
-        #st.write(n,alc)
-        alc=alc[1:]
-        #st.write(n,alc)
+        
         for i in alc:
             worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
             for j in n:
                 worksheet.write_formula(i+j+str(4), '{IFERROR(FIND("kill",LOWER('+i+j+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+j+str(5)+')),0)}')
-                worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
-                worksheet.write_formula('G1','{=(C1-E1)}',format_r)
-                worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
-                worksheet.write('A1',str(data_file.name)[:-5],format_r)   
+        worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
+        worksheet.write_formula('G1','{=(C1-E1)}',format_r)
+        worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
+        worksheet.write('A1',str(data_file.name)[:-5],format_r)  
+        worksheet.write('A4','Kill or Consolidate?') 
         from xlsxwriter.utility import xl_rowcol_to_cell
         worksheet.data_validation(4,1,4,hit_count, {'validate': 'list',
                                   'source': ['Consolidate', 'Kill (Duplicate)', 'Kill (Conditionally)',"Kill (Don't track)",'OK','OK w/value bug','Discuss']})
@@ -497,7 +496,7 @@ else:
     writer.save()
     
     st.download_button(
-        label="Download data as CSV",
+        label="Download data as Excel",
         data=output1,
         file_name= output,
        mime="application/vnd.ms-excel",
@@ -865,7 +864,7 @@ else:
     #st.write('kill',json_Data.loc[4,'Web'])
     #st.dataframe(json_Data)
     d=json_Data['Date'].iloc[0]
-    #st.write(d)
+    st.write(d)
     json_Data = json_Data.T
     json_Data=json_Data.reset_index()
     #json_Data=json_Data.style.apply(style_specific_cell, axis=None)
@@ -927,7 +926,7 @@ else:
             worksheet.write('A1',web_file.name,format_r)
             from string import ascii_uppercase as alc
             n=alc
-            alc=alc[1:]
+            
             for i in alc:
                 worksheet.write_formula(i+str(4), '{IFERROR(FIND("kill",LOWER('+i+str(5)+')),0)+IFERROR(FIND("consolidate",LOWER('+i+str(5)+')),0)}')
                 for j in n:
@@ -935,7 +934,7 @@ else:
             worksheet.write_formula('E1', '{=SUM(B4:ZZ4)}',format_r)
             worksheet.write_formula('G1','{=(C1-E1)}',format_r)
             worksheet.write_formula('I1','{=1-(G1/C1)}',format_r)
-
+            worksheet.write('A4','Kill or Consolidate?')
             from xlsxwriter.utility import xl_rowcol_to_cell
             worksheet.data_validation(4,1,4,hit_count, {'validate': 'list',
                                   'source': ['Consolidate', 'Kill (Duplicate)', 'Kill (Conditionally)',"Kill (Don't track)",'OK','OK w/value bug','Discuss']})
@@ -985,7 +984,7 @@ else:
     
     
     st.download_button(
-        label="Download data as CSV",
+        label="Download data as Excel",
         data=output1,
         file_name= output,
         mime="application/vnd.ms-excel"
